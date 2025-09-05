@@ -1,4 +1,7 @@
-# Project
+# Project: Name Generator
+This project is a **name generator** developed for the *University of Helsinki* Algorithms and AI Lab
+
+---
 
 ## Documentation
 - [Specification Document](Documentation/Specification-Document.md)

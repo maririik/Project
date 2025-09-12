@@ -1,49 +1,44 @@
+from collections import Counter, defaultdict
 
-class TrieNode:
+class NGramTrie:
     ""
-    def __init__(self, letter):
-        self.letter = letter
-        self.children = {}
-        self.is_end_of_name = False
+    def __init__(self, n):
+        if n < 1:
+            raise ValueError("n must be >= 1")
+        self.n = n
+        self.counts = defaultdict(Counter)
 
-class Trie:
-    ""
-    def __init__(self):
-        self.root = TrieNode("*")
+
+    def tokenize_with_markers(self, name):
+        return ["<s>"]*(self.n-1) + list(name) + ["</s>"]
         
     def add_name(self, name):
-        curr_node = self.root
-        for letter in name:
-            if letter not in curr_node.children:
-                curr_node.children[letter] = TrieNode(letter)
-            curr_node = curr_node.children[letter]
-        curr_node.is_end_of_name = True
+        tokens = self.tokenize_with_markers(name)
+        for i in range(self.n - 1, len(tokens)):
+            context = tuple(tokens[i- (self.n - 1): i ]) if self.n > 1 else tuple()
+            next_token = tokens[i]
 
-    def does_name_exist(self, name):
-        if name == "":
-            return True
-        curr_node = self.root
-        for letter in name:
-            if letter not in curr_node.children:
-                return False
-            curr_node = curr_node.children[letter]
-        return curr_node.is_end_of_name
+            self.counts[context][next_token] += 1
 
 
-trie = Trie()
-names = ["tim", "timothy", "amogelang", "amor", "amore"]
+    def candidates(self, context):
+        tuple_context = tuple(context)
+        if len(tuple_context) != self.n-1:
+            raise ValueError("context length must be n-1")
+        return self.counts.get(tuple_context, Counter())
+    
+
+    def total_successors(self, context):
+        return sum(self.candidates(context).values())
+
+trie = NGramTrie(n=3)
+names = ["anna", "anne"]
 for name in names:
     trie.add_name(name)
 
-print(trie.does_name_exist("tim")) # True
-print(trie.does_name_exist("")) # True
-print(trie.does_name_exist("timo")) # False
-print(trie.does_name_exist("amogelang")) # True
-print(trie.does_name_exist("amorr")) # False
-print(trie.does_name_exist("amore")) # True
-print(trie.does_name_exist("timothy")) # True
-
-
-
+print(trie.candidates(("<s>", "<s>")))   # {'a': 2}
+print(trie.candidates(("a", "n")))       # {'n': 2}
+print(trie.candidates(("n", "n")))       # {'a': 1, 'e': 1}
+print(trie.total_successors(("n", "n"))) # 2
 
 

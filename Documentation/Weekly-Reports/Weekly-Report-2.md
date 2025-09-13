@@ -4,6 +4,19 @@
 
 ## What did I do this week?
 This week, I started writing my code. I created a basic trie data structure and added initial preprocessing and loading functions for the name datasets. I also added the Kaggle name datasets into the repository, wrote unit tests for the cleaning and loading functions, and confirmed that the real data loads correctly.The program also has an initial n-gram trie which trains on names and returns successor counts. 
+## Test Coverage
+
+This week I set up pytest with coverage tracking.  
+The current report shows:
+
+| File                  | Statements | Missing | Coverage |
+|-----------------------|------------|---------|----------|
+| src/namegen/__init__.py | 1          | 0       | 100%     |
+| src/namegen/corpus.py   | 29         | 0       | 100%     |
+| src/namegen/trie.py     | 30         | 30      | 0%       |
+| **Total**              | **60**     | **30**  | **50%**  |
+
+Next steps: add unit tests for the `trie.py` module to raise overall coverage.
 
 ## How has the program progressed?
 The program now successfully loads raw name data, cleans it (removing invalid characters, handling spaces, apostrophes, and hyphens), and validates that the cleaned names meet length and formatting requirements. I also implemented an initial version of the n-gram trie model that adds start/end markers and accumulates successor counts for each n-1 length context. I also added unit tests for the preprocessing and data loading pipeline. The trie model has also been tested manually on small examples (e.g., “anna”, “anne”), showing that it produces the expected successor counts.

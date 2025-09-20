@@ -2,7 +2,7 @@
 name = "namegen"
 version = "0.1.0"
 description = "Name generator project for University of Helsinki Algorithms and AI Lab"
-authors = ["mariirik <aurora.riikonen@gmail.com>"]
+authors = ["mariirik"]
 readme = "README.md"
 
 packages = [

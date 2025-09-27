@@ -133,19 +133,17 @@ class NGramGenerator:
 
 # ---------------- Example Usage ----------------
 if __name__ == "__main__":
-    """
-    Minimal example usage of the NGramTrie + NGramGenerator classes.
+    # Minimal example usage of the NGramTrie + NGramGenerator classes.
+    #
+    # This block demonstrates how to load a dataset file, build a model, and
+    # generate sample names from the command line.
+    #
+    # ⚠️ Note:
+    #   The primary intended interface for this project is the Gradio UI
+    #   (see app.py). This script is included only as a quick, minimal example
+    #   for testing or experimenting without the UI.
 
-    This block demonstrates how to load a dataset file, build a model, and
-    generate sample names from the command line.
-
-    ⚠️ Note:
-        The primary intended interface for this project is the Gradio UI
-        (see app.py). This script is included only as a quick, minimal example
-        for testing or experimenting without the UI.
-    """
     from pathlib import Path
-
     PROJECT_DIR = Path(__file__).parent.parent
     DATA_FILE = PROJECT_DIR / "data" / "female.txt"
 

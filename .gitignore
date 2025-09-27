@@ -5,9 +5,14 @@ __pycache__/
 
 .pytest_cache/
 
-
 .venv/
-
+env/
+venv/
 
 .vscode/
 .idea/
+
+.coverage/
+
+tempCodeRunnerFile.py/
+tempCodeRunnerFile.python/

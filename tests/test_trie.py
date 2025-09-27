@@ -1,6 +1,9 @@
-import pytest
 import random
-from namegen import NGramTrie, Node, sample_weighted
+import pytest
+from trie import NGramTrie, Node
+from namegen import NGramGenerator, sample_weighted
+
+__all__ = ["NGramTrie", "Node", "NGramGenerator", "sample_weighted"]
 
 @pytest.fixture
 def names_small():
@@ -112,48 +115,54 @@ def test_sample_weighted_empty_total(rng_seed0):
 
 def test_generate_returns_none_when_no_training_data(rng_seed0):
     m = NGramTrie(order=2)
-    assert m.generate(rng=rng_seed0) is None
+    g = NGramGenerator(m)
+    assert g.generate(rng=rng_seed0) is None
 
 def test_generate_length_constraint_fixed(names_small, rng_seed0):
     m = NGramTrie(names_small, order=3)
+    g = NGramGenerator(m)
     target_len = 4
-    s = m.generate(target_len=target_len, max_len=10, rng=rng_seed0, retries=200, capitalize=False)
+    s = g.generate(target_len=target_len, max_len=10, rng=rng_seed0, retries=200, capitalize=False)
     if s is not None:
         assert len(s) == target_len
 
 def test_generate_never_returns_exact_training_name(names_small, rng_seed0):
     m = NGramTrie(names_small, order=3)
+    g = NGramGenerator(m)
     for _ in range(10):
-        s = m.generate(rng=rng_seed0, retries=300, capitalize=False)
+        s = g.generate(rng=rng_seed0, retries=300, capitalize=False)
         if s is not None:
             assert s not in m.names
 
 def test_generate_capitalize_flag(names_mixed, rng_seed0):
     m = NGramTrie(names_mixed, order=3)
-    s1 = m.generate(rng=rng_seed0, capitalize=True, retries=300)
-    s2 = m.generate(rng=rng_seed0, capitalize=False, retries=300)
+    g = NGramGenerator(m)
+    s1 = g.generate(rng=rng_seed0, capitalize=True, retries=300)
+    s2 = g.generate(rng=rng_seed0, capitalize=False, retries=300)
     if s1 is not None:
         assert s1[:1] == s1[:1].upper()
     if s2 is not None:
         assert s2[:1] == s2[:1].lower()
 
-
 def test_generate_respects_max_len(names_mixed, rng_seed0):
     m = NGramTrie(names_mixed, order=3)
-    s = m.generate(target_len=None, max_len=5, rng=rng_seed0, retries=400, capitalize=False)
+    g = NGramGenerator(m)
+    s = g.generate(target_len=None, max_len=5, rng=rng_seed0, retries=400, capitalize=False)
     if s is not None:
         assert len(s) <= 5
 
 def test_generate_handles_impossible_fixed_length(names_small, rng_seed0):
     m = NGramTrie(names_small, order=4) 
-    out = m.generate(target_len=3, max_len=3, rng=rng_seed0, retries=50, capitalize=False)
+    g = NGramGenerator(m)
+    out = g.generate(target_len=3, max_len=3, rng=rng_seed0, retries=50, capitalize=False)
     assert out is None or len(out) == 3
+
 
 # ---------- Case handling behavior ----------
 
 def test_case_normalization_treats_variants_as_same(rng_seed0):
     names = ["Anna", "ANNA", "anna", "Anne"]
     m = NGramTrie(names, order=2, normalize_case=True)
+    g = NGramGenerator(m)
     assert m.names == {"anna", "anne"}
     assert m.successors("A") == m.successors("a")
-

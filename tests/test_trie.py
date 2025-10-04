@@ -1,168 +1,173 @@
+# tests/test_namegen_and_trie.py
 import random
 import pytest
-from trie import NGramTrie, Node
+
+from trie import NGramTrie
 from namegen import NGramGenerator, sample_weighted
 
-__all__ = ["NGramTrie", "Node", "NGramGenerator", "sample_weighted"]
 
+
+# Shared fixtures & tiny helpers
 @pytest.fixture
 def names_small():
-    return ["Anna", "Anne", "amy"]
+    return ["anna", "anne", "amy"]
 
 @pytest.fixture
 def names_mixed():
-    return ["chris", "christopher", "christine", "chloe", "charlie"]
-
-@pytest.fixture
-def rng_seed0():
-    return random.Random(0)
-
-# ---------- Basic structure / construction ---------- 
-
-def test_init_empty_ok():
-    m = NGramTrie() 
-    assert isinstance(m.root, Node)
-    assert m.order == 2
-    assert m.names == set()
-    assert m.start_counts == {}
-
-def test_get_node_empty_returns_root(names_small):
-    m = NGramTrie(names_small, order=2)
-    assert m.get_node("") is m.root
-
-def test_init_order_validation():
-    with pytest.raises(ValueError):
-        NGramTrie(order=0) 
-
-def test_fit_raises_if_order_exceeds_longest(names_small):
-    m = NGramTrie(order=10)
-    with pytest.raises(ValueError):
-        m.fit(names_small)
-
-def test_fit_builds_trie_and_counts_bigram(names_small):
-    m = NGramTrie(names_small, order=2)
-    first_letters = set(m.root.children.keys())
-    assert {"a"} <= first_letters
-    assert m.start_counts.get("a", 0) == 3
-
-def test_successors_order1_empty_context(names_small):
-    m = NGramTrie(names_small, order=1)
-    assert m.successors("") == m.root.next_counts
-
-def test_refit_clears_previous_counts(names_small):
-    m = NGramTrie(["ZZZ"], order=2)
-    assert "z" in (k.casefold() for k in m.root.children.keys())  
-    m.fit(names_small)
-    assert "a" in m.root.children
-    assert "z" not in m.root.children
+    return ["Anna", "ANNE", "andrew", "aNdReA", "amy", "MARIA", "Marie", "Marin"]
 
 
-# ---------- Trie traversal helpers ----------
+class FakeRNG:
+    """Deterministic stand-in for random.Random.random()."""
+    def __init__(self, seq=None):
+        self.seq = list(seq or [])
+        self.i = 0
 
-def test_get_node_and_get_node_chars(names_small):
-    m = NGramTrie(names_small, order=2)
-    node_a = m.get_node("a")
-    assert node_a is not None
-    node_ann = m.get_node_chars(list("ann"))
-    assert node_ann is not None
-    node_missing = m.get_node("zzz")
-    assert node_missing is None
-
-def test_ensure_path(names_small):
-    m = NGramTrie(names_small, order=3)
-    ctx = list("an")  
-    node = m.ensure_path(ctx)
-    assert node is not None
-    node2 = m.get_node_chars(ctx)
-    assert node2 is node
+    def random(self):
+        if not self.seq:
+            return 0.0
+        v = self.seq[self.i % len(self.seq)]
+        self.i += 1
+        return v
 
 
-# ---------- N-gram counts & successors ----------
+# sample_weighted
+def test_sample_weighted_empty_and_zeroes():
+    rng = random.Random(0)
+    assert sample_weighted({}, rng) is None
+    assert sample_weighted({"a": 0, "b": 0}, rng) is None
 
-def test_build_ngram_counts_order1(names_small):
-    m = NGramTrie(names_small, order=1)
-    assert sum(m.root.next_counts.values()) == sum(len(n) for n in names_small)
-    assert m.root.next_counts.get("a", 0) >= 3  # at least first chars
-
-def test_successors_bigram(names_small):
-    m = NGramTrie(names_small, order=2)
-    succ = m.successors("a")
-    assert isinstance(succ, dict)
-    assert "n" in succ or "m" in succ 
-    assert m.successors("z") == {}
-
-def test_successors_trigram(names_small):
-    m = NGramTrie(names_small, order=3)
-    succ = m.successors("an")
-    assert isinstance(succ, dict)
-    assert "n" in succ
-
-
-# ---------- sample_weighted ----------
-
-def test_sample_weighted_basic(rng_seed0):
-    w = {"a": 1, "b": 0, "c": 2}
-    picks = [sample_weighted(w, rng_seed0) for _ in range(20)]
-    assert "b" not in picks
-    assert "c" in picks
-
-def test_sample_weighted_empty_total(rng_seed0):
-    assert sample_weighted({}, rng_seed0) is None
-    assert sample_weighted({"x": 0, "y": 0}, rng_seed0) is None
-
-
-# ---------- Generation behavior ----------
-
-def test_generate_returns_none_when_no_training_data(rng_seed0):
-    m = NGramTrie(order=2)
-    g = NGramGenerator(m)
-    assert g.generate(rng=rng_seed0) is None
-
-def test_generate_length_constraint_fixed(names_small, rng_seed0):
-    m = NGramTrie(names_small, order=3)
-    g = NGramGenerator(m)
-    target_len = 4
-    s = g.generate(target_len=target_len, max_len=10, rng=rng_seed0, retries=200, capitalize=False)
-    if s is not None:
-        assert len(s) == target_len
-
-def test_generate_never_returns_exact_training_name(names_small, rng_seed0):
-    m = NGramTrie(names_small, order=3)
-    g = NGramGenerator(m)
+def test_sample_weighted_single_positive_wins():
+    rng = random.Random(0)
     for _ in range(10):
-        s = g.generate(rng=rng_seed0, retries=300, capitalize=False)
-        if s is not None:
-            assert s not in m.names
+        assert sample_weighted({"x": 3, "y": 0}, rng) == "x"
 
-def test_generate_capitalize_flag(names_mixed, rng_seed0):
-    m = NGramTrie(names_mixed, order=3)
-    g = NGramGenerator(m)
-    s1 = g.generate(rng=rng_seed0, capitalize=True, retries=300)
-    s2 = g.generate(rng=rng_seed0, capitalize=False, retries=300)
-    if s1 is not None:
-        assert s1[:1] == s1[:1].upper()
-    if s2 is not None:
-        assert s2[:1] == s2[:1].lower()
+def test_sample_weighted_weight_bias_sanity():
+    rng = random.Random(123)
+    w = {"a": 1, "b": 3, "c": 6}
+    counts = {k: 0 for k in w}
+    for _ in range(3000):
+        counts[sample_weighted(w, rng)] += 1
+    assert counts["c"] > counts["b"] > counts["a"]
 
-def test_generate_respects_max_len(names_mixed, rng_seed0):
-    m = NGramTrie(names_mixed, order=3)
-    g = NGramGenerator(m)
-    s = g.generate(target_len=None, max_len=5, rng=rng_seed0, retries=400, capitalize=False)
+
+# Trie
+def test_rejects_invalid_order():
+    with pytest.raises(ValueError):
+        NGramTrie(["anna"], order=0)
+
+def test_rejects_order_longer_than_longest_name():
+    with pytest.raises(ValueError):
+        NGramTrie(["ann"], order=4)
+
+def test_fit_rejects_empty_training():
+    m = NGramTrie(order=2)
+    with pytest.raises(ValueError):
+        m.fit([])
+
+def test_case_normalization_default_is_on(names_mixed):
+    m = NGramTrie(names_mixed, order=2) 
+    assert "anna" in m.names and "anne" in m.names
+    assert "Anna" not in m.names and "ANNE" not in m.names
+
+def test_case_normalization_off_keeps_variants_separate():
+    m = NGramTrie(["Anna", "anna"], order=2, normalize_case=False)
+    assert "A" in m.root.children and "a" in m.root.children
+
+def test_successors_bigram_counts_basic():
+    names = ["anna", "anne"]
+    t = NGramTrie(names=names, order=2)
+    succ_a = t.successors("a")
+    assert succ_a.get("n", 0) >= 2
+    succ_ann = t.successors("ann")
+    assert set(succ_ann) <= {"a", "e"}  
+
+def test_start_counts_for_order_gt1():
+    names = ["maria", "marie", "mark"]
+    t = NGramTrie(names=names, order=3)
+    assert t.start_counts.get("ma", 0) == 3
+    assert set(t.start_counts) == {"ma"}
+
+def test_get_node_and_successors_when_missing():
+    t = NGramTrie(names=["zoe"], order=3)
+    assert t.get_node("xy") is None
+    assert t.successors("xy") == {}
+
+def test_order_one_places_counts_on_root():
+    t = NGramTrie(names=["abc", "aba"], order=1)
+    succ = t.successors("")
+    assert succ.get("a") == 3
+    assert succ.get("b") == 2
+    assert succ.get("c") == 1
+    assert t.successors("anything") == succ
+
+
+# Generator
+def test_generate_respects_target_len_exact_when_possible(names_mixed):
+    model = NGramTrie(names_mixed, order=3)
+    gen = NGramGenerator(model)
+    rng = random.Random(0)
+    out = gen.generate(target_len=4, max_len=10, rng=rng, capitalize=False)
+    if out is not None:
+        assert len(out) == 4
+
+def test_generate_avoids_exact_training_names(monkeypatch):
+    names = ["maria"]
+    model = NGramTrie(names, order=2)
+    gen = NGramGenerator(model)
+
+    def fake_sample_weighted(weights, rng):
+        return max(weights, key=weights.get)
+
+    monkeypatch.setattr("namegen.sample_weighted", fake_sample_weighted)
+
+    out = gen.generate(target_len=None, max_len=10, capitalize=False, rng=random.Random(0), retries=0)
+    assert out is None
+
+def test_generate_with_order_one_uses_root_counts_and_stops():
+    names = ["ab", "aa", "ba"]
+    model = NGramTrie(names, order=1)
+    gen = NGramGenerator(model)
+    rng = random.Random(42)
+    s = gen.generate(target_len=2, max_len=2, rng=rng, capitalize=False)
     if s is not None:
-        assert len(s) <= 5
+        assert len(s) == 2
 
-def test_generate_handles_impossible_fixed_length(names_small, rng_seed0):
-    m = NGramTrie(names_small, order=4) 
-    g = NGramGenerator(m)
-    out = g.generate(target_len=3, max_len=3, rng=rng_seed0, retries=50, capitalize=False)
-    assert out is None or len(out) == 3
+def test_generate_raises_when_target_len_exceeds_max_len():
+    names = ["ada", "ava", "amy"]
+    model = NGramTrie(names, order=2)
+    gen = NGramGenerator(model)
+    with pytest.raises(ValueError):
+        gen.generate(target_len=12, max_len=10)
 
+def test_generate_once_stops_when_no_successors():
+    names = ["zx"]
+    model = NGramTrie(names, order=2) 
+    gen = NGramGenerator(model)
+    rng = random.Random(0)
+    s = gen.generate_once(target_len=None, max_len=10, stop_prob=0.0, rng=rng)
+    assert isinstance(s, str)
+    assert s == "" or len(s) <= 3
 
-# ---------- Case handling behavior ----------
+@pytest.mark.parametrize("cap", [True, False])
+def test_generate_capitalize_flag_param(names_mixed, cap):
+    model = NGramTrie(names_mixed, order=3)
+    gen = NGramGenerator(model)
+    s = gen.generate(rng=random.Random(0), capitalize=cap, retries=100)
+    if s:
+        first = s[0]
+        assert (first == first.upper()) if cap else (first == first.lower())
 
-def test_case_normalization_treats_variants_as_same(rng_seed0):
-    names = ["Anna", "ANNA", "anna", "Anne"]
-    m = NGramTrie(names, order=2, normalize_case=True)
-    g = NGramGenerator(m)
-    assert m.names == {"anna", "anne"}
-    assert m.successors("A") == m.successors("a")
+def test_variable_length_forced_stop(names_mixed):
+    model = NGramTrie(names_mixed, order=3)
+    gen = NGramGenerator(model)
+    rng = FakeRNG([0.0]) 
+    s = gen.generate(target_len=None, max_len=20, rng=rng, capitalize=False)
+    assert s is None or len(s) <= 3
+
+def test_variable_length_force_continue_until_max(names_mixed):
+    model = NGramTrie(names_mixed, order=3)
+    gen = NGramGenerator(model)
+    rng = FakeRNG([0.99])  
+    s = gen.generate(target_len=None, max_len=5, rng=rng, capitalize=False)
+    assert s is None or len(s) <= 5

@@ -59,6 +59,13 @@ DATASETS = {
             "Source: https://github.com/karpathy/makemore"
         ),
     },
+    "Pokémon (pokemon_names.txt)": {
+        "files": [DATA_DIR / "pokemon_names.txt"],
+        "desc": (
+            "This dataset contains information on all 802 Pokemon from all Seven Generations of Pokemon..\n"
+            "Source: https://www.kaggle.com/datasets/rounakbanik/pokemon"
+        ),
+    },
 }
 
 def _read_txt(path: Path):

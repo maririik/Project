@@ -3,7 +3,7 @@
 **Time spent:** ~ 7 hours 
 
 ## What did I do this week?
-This week I finished the peer review. I also continued drafting both the Implementation document and the Testing document. Additionally, I expanded the testing. I added deterministic tests using seeded RNG and a tiny FakeRNG to remove flaky retries and used pytest’s monkeypatch to control sample_weighted choices and early-stop behavior.
+This week I finished the peer review. I also continued drafting both the Implementation document and the Testing document. Additionally, I expanded the testing. I added deterministic tests using seeded RNG and a tiny FakeRNG to remove flaky retries and used pytest’s monkeypatch to control sample_weighted choices and early-stop behavior. I also added a PPokémon data set.
 
 ## How has the program progressed?
 The test coverage has increased from ~62% to ~86% (terminal shows namegen.py ~78%, trie.py ~97%). The generator and trie behavior are now covered for both normal flow and edge cases (invalid order, empty names, missing successors).

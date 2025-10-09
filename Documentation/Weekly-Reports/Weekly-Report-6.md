@@ -4,12 +4,12 @@
 
 ## What did I do this week?
 This week I improved my unit tests. I tested whether generated n-grams exist in training (closed-corpus check) I also improved my code using the good peer review feedback I received. Namely:
-- Refactored the project into a proper **src package layout**: `src/namegen/` with `__init__.py`, `trie.py`, `namegen.py`.
-- Fixed **imports across the codebase** so CLI/UI/tests all use `from namegen import ...`.
-- Added **deterministic RNG injection** to `NGramGenerator` and `sample_weighted` (no global seeding; tests can fix the seed).
-- Updated **`pyproject.toml`**: declared the package under `src`, added `gradio` dependency, cleaned pytest path hacks.
-- Improved **UI text** (what “order” means; why high order can stall on small data) + **order-too-high hint** in the Dataset info panel.
-- Documented **data format & constraints** in `README.md` (one name per line; allowed characters; length caps).
+- Refactored the project into a proper src package layout: `src/namegen/` with `__init__.py`, `trie.py`, `namegen.py`.
+- Fixed imports across the codebase so CLI/UI/tests all use `from namegen import ...`.
+- Added deterministic RNG injection to `NGramGenerator` and `sample_weighted` (no global seeding; tests can fix the seed).
+- Updated `pyproject.toml`: declared the package under `src`, added `gradio` dependency, cleaned pytest path hacks.
+- Improved UI text (what “order” means; why high order can stall on small data) + order-too-high hint in the Dataset info panel.
+- Documented data format & constraints in `README.md` (one name per line; allowed characters; length caps).
 
 
 ## How has the program progressed?

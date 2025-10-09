@@ -15,6 +15,5 @@ This week I learned how to use pytest’s monkeypatch to replace functions/attri
 Balancing “meaningful” tests with “branch-hitting” tests. Some coverage lines are fallbacks that require contrived inputs (weird mappings) to reach
  
 ## What will I do next?
-I will continue working on the Implementation and Testing documents. I will push coverage toward 90%+ and try to finalise the tests.
-
+I will continue working on the Implementation and Testing documents. I will push coverage toward 90%+ and try to finalise the tests. 
 

@@ -22,7 +22,7 @@ I learned how to organize the code so modules import cleanly across the app, tes
 Some testing aspects have been challenging. It was a little difficult to figure out which tests are comprehensive enough.
  
 ## What will I do next?
-I will continue writing my testing and implementation documents. And improving my unit testing. I will also try to refine the UI in preparation for the demo sessions. I would also like to switch terminology to Markov convention: interpret `order = k` as “depends on k previous chars” (current n-gram order n maps to k = n−1) for clarity.
+I will continue writing my testing and implementation documents. I would like to divide my testing files for clarity and remove unnecessary tests. I will also try to refine the UI in preparation for the demo sessions. I would also like to switch terminology to Markov convention: interpret `order = k` as “depends on k previous chars” (current n-gram order n maps to k = n−1) for clarity. 
 
 .
 

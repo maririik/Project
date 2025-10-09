@@ -1,7 +1,7 @@
 # app.py
 from pathlib import Path
 import gradio as gr
-from src import NGramTrie, NGramGenerator
+from namegen import NGramTrie, NGramGenerator
 
 PROJECT_DIR = Path(__file__).parent
 DATA_DIR = PROJECT_DIR / "data"
@@ -105,6 +105,16 @@ def generate_ui(dataset_choice, order, target_len, max_len, stop_prob, count, re
     names, src_info = load_names_by_choice(dataset_choice)
     if not names:
         return f"No names loaded.\n{src_info}", ""
+    
+    order_int = int(order)
+    avg_len = sum(len(n) for n in names) / len(names) if names else 0.0
+    order_hint = ""
+    if order_int > 1 and avg_len and (order_int - 1) > avg_len * 0.6:
+        order_hint = (
+            f"\n\n⚠️ Tip: average name length ≈ {avg_len:.1f}. "
+            f"With order={order_int}, many contexts may be rare or missing. "
+            f"If generation stalls or repeats, try a lower order (e.g. {max(1, order_int - 1)})."
+        )
 
     try:
         model = NGramTrie(names, order=int(order), normalize_case=bool(normalize))
@@ -130,13 +140,24 @@ def generate_ui(dataset_choice, order, target_len, max_len, stop_prob, count, re
     preview = "\n".join(names[:8])
     return (
         f"Using dataset(s): {src_info}\n"
-        f"Total names: {len(names)}\n\nPreview:\n{preview}",
+        f"Total names: {len(names)}\n\nPreview:\n{preview}{order_hint}",
         "\n".join(results),
     )
 
 def build_demo():
     with gr.Blocks(title="Trie-backed n-gram name generator") as demo:
-        gr.Markdown("## Trie-backed n-gram name generator")
+        gr.Markdown(
+    "## Trie-backed n-gram name generator\n\n"
+    "**How the controls work (quick tips):**\n\n"
+    "- **n-gram order** controls how many previous characters the model looks at when picking the next one.\n"
+    "  - Order **1** = no context (each letter chosen by overall frequency).\n"
+    "  - Order **2** = uses the **last 1** character (bigrams), order **3** = last **2** chars (trigrams), etc.\n"
+    "- **Why not set order too high?** With small datasets, many long contexts never appear in training. The model then has\n"
+    "  few or no successors to choose from, so it must back off or can stop early. Practically, **too high an order on small data**\n"
+    "  often yields repetitive names or failed generations. If output looks stuck/repetitive or you get blanks, **lower the order**.\n"
+    "- **Exact length vs variable:** Set *exact length* > 0 to force a fixed length; otherwise the generator may stop early\n"
+    "  (controlled by *stop probability*). If names are too short, try reducing *stop probability* or increasing *max length*.\n"
+)
 
         with gr.Row():
             with gr.Column():

@@ -24,6 +24,3 @@ Some testing aspects have been challenging. It was a little difficult to figure 
 ## What will I do next?
 I will continue writing my testing and implementation documents. I would like to divide my testing files for clarity and remove unnecessary tests. I will also try to refine the UI in preparation for the demo sessions. I would also like to switch terminology to Markov convention: interpret `order = k` as “depends on k previous chars” (current n-gram order n maps to k = n−1) for clarity. 
 
-.
-
-

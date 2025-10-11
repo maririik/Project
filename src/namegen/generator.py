@@ -29,7 +29,7 @@ def sample_weighted(weights, rng=None):
         acc += w
         if r <= acc:
             return k
-    return next(iter(weights), None)
+    return next(iter(weights), None) 
 
 
 
@@ -126,47 +126,3 @@ class NGramGenerator:
         return "".join(name_chars)
 
 
-
-
-
-
-# ---------------- Example Usage ----------------
-if __name__ == "__main__":
-    # Minimal example usage of the NGramTrie + NGramGenerator classes.
-    #
-    # This block demonstrates how to load a dataset file, build a model, and
-    # generate sample names from the command line.
-    #
-    # ⚠️ Note:
-    #   The primary intended interface for this project is the Gradio UI
-    #   (see app.py). This script is included only as a quick, minimal example
-    #   for testing or experimenting without the UI.
-
-    from pathlib import Path
-    PROJECT_DIR = Path(__file__).parent.parent
-    DATA_FILE = PROJECT_DIR / "data" / "female.txt"
-
-    if not DATA_FILE.exists():
-        print(f"Dataset not found: {DATA_FILE}")
-        exit(1)
-
-    txt = DATA_FILE.read_text(encoding="utf-8", errors="ignore")
-    names = [line.strip().lower() for line in txt.splitlines() if line.strip()]
-    print(f"Loaded {len(names)} names from {DATA_FILE}")
-
-    try:
-        order = int(input("Enter desired n-gram order (e.g. 2, 3, 4): "))
-    except ValueError:
-        order = 3
-
-    try:
-        target_len = int(input("Enter desired name length (e.g. 6): "))
-    except ValueError:
-        target_len = None
-
-    model = NGramTrie(names, order=order)
-    generator = NGramGenerator(model)
-
-    print(f"\nGenerating names with order={order}, target_len={target_len}...")
-    for _ in range(10):
-        print(" ->", generator.generate(target_len=target_len))

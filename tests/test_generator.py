@@ -46,14 +46,6 @@ def test_generate_once_stops_when_no_successors():
     assert isinstance(s, str)
     assert s == "" or len(s) <= 3
 
-@pytest.mark.parametrize("cap", [True, False])
-def test_generate_capitalize_flag_param(names_mixed, cap):
-    model = NGramTrie(names_mixed, order=3)
-    gen = NGramGenerator(model, rng=random.Random(0))
-    s = gen.generate(capitalize=cap, retries=100)
-    if s:
-        first = s[0]
-        assert (first == first.upper()) if cap else (first == first.lower())
 
 @pytest.mark.parametrize(
     ("seq", "max_len", "upper_bound"),

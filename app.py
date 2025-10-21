@@ -52,15 +52,22 @@ DATASETS = {
             "none/resource/08c89936-a230-42e9-a9fc-288632e234f5"
         ),
     },
-    "Names (names.txt)": {
-        "files": [DATA_DIR / "names.txt"],
+    "US Names (US_names.txt)": {
+        "files": [DATA_DIR / "US_names.txt"],
         "desc": (
             "32k most common US names from SSA.gov (2018), via makemore repo.\n"
             "Source: https://github.com/karpathy/makemore"
         ),
     },
-    "Pokémon (pokemon_names.txt)": {
-        "files": [DATA_DIR / "pokemon_names.txt"],
+    "Finnish words (finnish_words.txt)": {
+        "files": [DATA_DIR / "finnish_words.txt"],
+        "desc": (
+            "Hämäläinen, M., & Alnajjar, K. (2019). Let’s FACE it: Finnish Poetry Generation with Aesthetics and Framing. In K. V. Deemter, C. Lin, & H. Takamura (Eds.), 12th International Conference on Natural Language Generation: Proceedings of the Conference (pp. 290-300). Stroudsburg, PA: The Association for Computational Linguistics..\n"
+            "Source: https://www.kaggle.com/datasets/mikahama/finnish-words-and-their-concreteness-values?resource=download"
+        ),
+    },
+    "Pokémon (pokemon.txt)": {
+        "files": [DATA_DIR / "pokemon.txt"],
         "desc": (
             "This dataset contains information on all 802 Pokemon from all Seven Generations of Pokemon..\n"
             "Source: https://www.kaggle.com/datasets/rounakbanik/pokemon"
@@ -101,11 +108,20 @@ def load_names_by_choice(choice: str):
     desc = entry.get("desc", "")
     return deduped, f"{info}\n\n{desc}"
 
-def generate_ui(dataset_choice, order, target_len, max_len, stop_prob, count, retries, normalize, capitalize):
+def generate_ui(dataset_choice, order, target_len, max_len, min_len, stop_prob, count, retries, normalize, capitalize):
+    
     names, src_info = load_names_by_choice(dataset_choice)
     if not names:
         return f"No names loaded.\n{src_info}", ""
     
+    try:
+        model = NGramTrie(names, order=int(order), normalize_case=bool(normalize))
+    except ValueError as e:
+        return str(e), ""
+
+
+    generator = NGramGenerator(model)
+
     order_int = int(order)
     avg_len = sum(len(n) for n in names) / len(names) if names else 0.0
     order_hint = ""
@@ -116,21 +132,27 @@ def generate_ui(dataset_choice, order, target_len, max_len, stop_prob, count, re
             f"If generation stalls or repeats, try a lower order (e.g. {max(1, order_int - 1)})."
         )
 
-    try:
-        model = NGramTrie(names, order=int(order), normalize_case=bool(normalize))
-    except ValueError as e:
-        return str(e), ""
-
-    generator = NGramGenerator(model)
 
     exact = int(target_len)
     exact = exact if exact > 0 else None
+    max_len = int(max_len)
+    min_len = int(min_len)
+
+    if exact is not None and exact > max_len:
+        return "Error: exact length cannot exceed max length.", ""
+
+    if exact is None:
+        if min_len < 1:
+            return "Error: min length must be at least 1.", ""
+        if min_len > max_len:
+            return "Error: min length cannot exceed max length.", ""
 
     results = []
     for _ in range(int(count)):
         s = generator.generate(
             target_len=exact,
-            max_len=int(max_len),
+            max_len=max_len,
+            min_len=min_len if exact is None else 1, 
             stop_prob=float(stop_prob),
             retries=int(retries),
             capitalize=bool(capitalize),
@@ -147,17 +169,17 @@ def generate_ui(dataset_choice, order, target_len, max_len, stop_prob, count, re
 def build_demo():
     with gr.Blocks(title="Trie-backed n-gram name generator") as demo:
         gr.Markdown(
-    "## Trie-backed n-gram name generator\n\n"
-    "**How the controls work (quick tips):**\n\n"
-    "- **n-gram order** controls how many previous characters the model looks at when picking the next one.\n"
-    "  - Order **1** = no context (each letter chosen by overall frequency).\n"
-    "  - Order **2** = uses the **last 1** character (bigrams), order **3** = last **2** chars (trigrams), etc.\n"
-    "- **Why not set order too high?** With small datasets, many long contexts never appear in training. The model then has\n"
-    "  few or no successors to choose from, so it must back off or can stop early. Practically, **too high an order on small data**\n"
-    "  often yields repetitive names or failed generations. If output looks stuck/repetitive or you get blanks, **lower the order**.\n"
-    "- **Exact length vs variable:** Set *exact length* > 0 to force a fixed length; otherwise the generator may stop early\n"
-    "  (controlled by *stop probability*). If names are too short, try reducing *stop probability* or increasing *max length*.\n"
-)
+            "## Trie-backed n-gram name generator\n\n"
+            "**How the controls work (quick tips):**\n\n"
+            "- **n-gram order** controls how many previous characters the model looks at when picking the next one.\n"
+            "  - Order **1** = no context (each letter chosen by overall frequency).\n"
+            "  - Order **2** = uses the **last 1** character (bigrams), order **3** = last **2** chars (trigrams), etc.\n"
+            "- *(Note: n-gram order n corresponds to Markov order n − 1. Same idea, just different numbering.)*\n"
+            "- **Avoid setting order too high on small datasets.** Many long contexts never appear in training, which can cause\n"
+            "  stalls or repetitive outputs. If you get blanks or repeats, lower the order.\n"
+            "- **Exact length vs variable:** Set *exact length* > 0 to force a fixed length; otherwise the generator may stop early\n"
+            "  (controlled by *stop probability*). Use **Min length** to prevent ultra-short names in variable mode.\n"
+        )
 
         with gr.Row():
             with gr.Column():
@@ -173,7 +195,10 @@ def build_demo():
                     max_len = gr.Slider(1, 50, value=20, step=1, label="max length")
 
                 with gr.Row():
+                    min_len = gr.Slider(1, 50, value=3, step=1, label="min length")
                     stop_prob = gr.Slider(0, 1, value=0.35, step=0.01, label="stop probability")
+
+                with gr.Row():
                     retries = gr.Slider(1, 5000, value=500, step=50, label="retries per name")
                     count = gr.Slider(1, 200, value=10, step=1, label="how many to generate")
 
@@ -188,7 +213,7 @@ def build_demo():
 
         btn.click(
             fn=generate_ui,
-            inputs=[dataset_choice, order, target_len, max_len, stop_prob, count, retries, normalize, capitalize],
+            inputs=[dataset_choice, order, target_len, max_len, min_len, stop_prob, count, retries, normalize, capitalize],
             outputs=[src_info, results],
         )
 

@@ -40,7 +40,7 @@ class NGramGenerator:
        self.model = model
        self._rng = rng if rng is not None else random.Random()  
     
-    def generate(self, target_len=None, max_len=20, stop_prob=0.20, retries=500, capitalize=True):
+    def generate(self, target_len=None, max_len=20, min_len=1, stop_prob=0.20, retries=500, capitalize=True):
         """Generate a new name using the n-gram model.
 
         You can call this with no arguments to get a random name.  
@@ -50,6 +50,7 @@ class NGramGenerator:
             target_len (int or None): Exact length of the name. If None, the
                 generator may stop early using stop_prob.
             max_len (int): Maximum allowed length. Default is 20.
+            min_len (int): Minimum length allowed in variable-length mode (ignored if target_len is set).
             stop_prob (float): Chance of stopping early at each step when
                 target_len is None. Default is 0.20.
             rng (random.Random or None): Random generator. If None, uses Python's
@@ -63,17 +64,32 @@ class NGramGenerator:
             str or None: A generated name, or None if no valid name could
             be created after retries.
         """
-        if target_len is not None and target_len > max_len:
-            raise ValueError("target_len cannot exceed max_len")
+        if target_len is not None:
+            if target_len > max_len:
+                raise ValueError("target_len cannot exceed max_len")
+            if min_len > target_len:
+                raise ValueError("min_len cannot exceed target_len when target_len is set")
+        else:
+            if min_len < 1:
+                raise ValueError("min_len must be >= 1")
+            if min_len > max_len:
+                raise ValueError("min_len cannot exceed max_len")
 
         for _ in range(retries):
-            candidate = self.generate_once(target_len, max_len, stop_prob)
-            if candidate and candidate not in self.model.names:
-                if target_len is None or len(candidate) == target_len:
-                    return candidate.capitalize() if capitalize else candidate
+            candidate = self.generate_once(target_len, max_len, min_len, stop_prob)
+            if not candidate:
+                continue
+            if candidate in self.model.names:
+                continue
+            if target_len is not None:
+                ok = (len(candidate) == target_len)
+            else:
+                ok = (len(candidate) >= min_len)
+            if ok:
+                return candidate.capitalize() if capitalize else candidate
         return None
 
-    def generate_once(self, target_len, max_len, stop_prob):
+    def generate_once(self, target_len, max_len, min_len, stop_prob):
         """Attempt to generate a single name candidate.
 
         Args:
@@ -106,7 +122,12 @@ class NGramGenerator:
         while len(name_chars) < max_len:
             if target_len is not None and len(name_chars) >= target_len:
                 break
-            if target_len is None and self._rng.random() < stop_prob and "".join(name_chars) in m.names:
+            if (
+                target_len is None
+                and len(name_chars) >= min_len
+                and "".join(name_chars) in m.names
+                and self._rng.random() < stop_prob
+            ):
                 break
 
             if m.order == 1:

@@ -14,10 +14,29 @@ This project is a **name generator** developed for the *University of Helsinki* 
 - [Weekly Report 5](Documentation/Weekly-Reports/Weekly-Report-5.md)
 - [Weekly Report 6](Documentation/Weekly-Reports/Weekly-Report-6.md)
 
+## How it works
+1. Training
+      - Builds a prefix trie where each node represents a prefix of the training names.
+      - Each node stores successor counts (next_counts) and starting contexts (start_counts) for order > 1.
+
+2. Generation
+    - Starts from a random start context sampled from start_counts.
+    - Iteratively samples next characters weighted by next_counts of the current context node.
+    - Stops when reaching target_len, max_len, or with probability stop_prob.
+
+3. Output filtering
+    - Rejects names that exactly match training names.
+    - Retries until reaching the requested number or retries limit.
 
 ## How to Run the Project
+1. Clone the repository 
+```git clone https://github.com/maririik/namegen-algoai.git```
+2. Move to the cloned project directory
+```bash
+cd namegen-algoai
+```
 
-You can launch the Gradio web app either with **Poetry** or a plain Python environment.
+You can launch the Gradio web app with **Poetry**.
 ```
 poetry install
 poetry run python app.py
@@ -26,6 +45,38 @@ Once the app starts, open your browser and visit http://127.0.0.1:7860 to use th
 Make sure your training datasets are in the data/ folder (one name per line).
 
 
+
+
+
+## Running the Test Suite (pytest)
+
+All tests live in the `tests/` folder and cover trie construction and validation, weighted sampling, and generation behavior (including edge cases and reproducibility helpers). No manual seeding is needed to run the suite.
+
+### Quick start
+```bash
+# With Poetry
+poetry run pytest -q
+
+# With a plain virtualenv
+pytest -q
+
+# Coverage report
+pytest -q --cov=src --cov-report=term-missing 
+```
+
+
+### Tips
+
+- **Duplicates:** avoid duplicates, they overweight those names in the model.
+- **Normalization:** keep everything lowercase and remove leading/trailing spaces.
+- **Hyphenated names:** `maria-elisabet` is fine, the hyphen is modeled as a character.
+- **Very short datasets:** with only a few names, the model may produce many training names. Increase `retries` or add more data.
+
+### Common pitfalls
+
+- **Spaces in names:** `mary jane` introduces a space token and often degrades quality. Prefer `mary-jane` or `maryjane`.
+- **Exotic characters:** unicode letters work, but mixing accents with plain ASCII in small datasets can hurt consistency. Consider normalizing (e.g., `á -> a`) if output quality suffers.
+- **Long names not appearing:** raise `max_length` in the UI/CLI if your dataset skews long.
 
 ## Data format
 
@@ -42,30 +93,3 @@ The generator expects plain text files in `data/` with **one name per line**.
   - Generation: bounded by `max_length` (default **20**). Names longer than `max_length` cannot be produced. If your dataset has many very long names, increase `max_length`.
 
 
-### Tips
-
-- **Duplicates:** avoid duplicates, they overweight those names in the model.
-- **Normalization:** keep everything lowercase and remove leading/trailing spaces.
-- **Hyphenated names:** `maria-elisabet` is fine, the hyphen is modeled as a character.
-- **Very short datasets:** with only a few names, the model may produce many training names. Increase `retries` or add more data.
-
-### Common pitfalls
-
-- **Spaces in names:** `mary jane` introduces a space token and often degrades quality. Prefer `mary-jane` or `maryjane`.
-- **Exotic characters:** unicode letters work, but mixing accents with plain ASCII in small datasets can hurt consistency. Consider normalizing (e.g., `á -> a`) if output quality suffers.
-- **Long names not appearing:** raise `max_length` in the UI/CLI if your dataset skews long.
-
-## Running the Test Suite (pytest)
-
-All tests live in the `tests/` folder and cover trie construction and validation, weighted sampling, and generation behavior (including edge cases and reproducibility helpers). No manual seeding is needed to run the suite.
-
-### Quick start
-```bash
-# With Poetry
-poetry run pytest -q
-
-# With a plain virtualenv
-pytest -q
-
-# Coverage report
-pytest -q --cov=src --cov-report=term-missing

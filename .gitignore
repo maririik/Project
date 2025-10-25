@@ -14,5 +14,4 @@ venv/
 
 .coverage/
 
-tempCodeRunnerFile.py/
-tempCodeRunnerFile.python/
+src/temp*

@@ -32,28 +32,28 @@ Make sure your training datasets are in the data/ folder (one name per line).
 
 ## Using the UI (controls explained)
 
-- Dataset: pick one of the preloaded text files (or your custom one).
+- **Dataset:** pick one of the preloaded text files (or your custom one).
 - n-gram order: context size = order − 1.
     - Higher = more local structure; too high on small data may stall or overfit.
     - Note: n-gram order n ≈ Markov order n−1 (same idea, different numbering).
 
-- exact length (0 = variable):
+- **exact length** (0 = variable):
     - if > 0 → force exact length.
     - 0 → variable length with early stopping (see stop probability).
 
-- max length: hard cap on any generated name.
+- **max length:** hard cap on any generated name.
 
-- min length: lower bound when using variable length (ignored when exact length > 0).
+- **min length:** lower bound when using variable length (ignored when exact length > 0).
 
-- stop probability: in variable mode, once the current string already exists in training, this per-step probability lets the model stop early. Lower values → longer names.
+- **stop probability:** in variable mode, once the current string already exists in training, this per-step probability lets the model stop early. Lower values → longer names.
 
-- retries per name: how many attempts are allowed to find a valid, novel name.
+- **retries per name:** how many attempts are allowed to find a valid, novel name.
 
-- how many to generate: batch size.
+- **how many to generate:** batch size.
 
-- case-insensitive training: fold to lowercase before training (recommended).
+- **case-insensitive training:** fold to lowercase before training (recommended).
 
-- capitalize output: capitalize the first letter of each result.
+- **capitalize output:** capitalize the first letter of each result.
 
 #### Typical starting settings
 Order 3, exact length 0, max 20, min 3, stop prob 0.30–0.40, retries 500, count 10.

@@ -6,7 +6,7 @@ This project is a **name generator** developed for the *University of Helsinki* 
 ## Documentation
 - [Specification Document](Documentation/Specification-Document.md)
 - [Implementation Document](Documentation/Implementation-Document.md.md)
-- [Specification Document](Documentation/Specification-Document.md.md)
+- [Testing Document](Documentation/Testing-Document.md)
 - [Weekly Report 1](Documentation/Weekly-Reports/Weekly-Report-2.md)
 - [Weekly Report 2](Documentation/Weekly-Reports/Weekly-Report-2.md)
 - [Weekly Report 3](Documentation/Weekly-Reports/Weekly-Report-3.md)

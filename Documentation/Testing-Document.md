@@ -114,5 +114,5 @@ poetry run pytest -q tests/test_e2e.py -m slow
 - How:
     - Load a real dataset from data/ (falls back to a small built-in list if missing).
     - Build an order-3 model, then generate a batch of ~200 names (min_len=3, max_len=12, stop_prob≈0.35, retries=500, capitalize=False).
-    - Assert: (a) ≥80% non-empty, (b) lengths within bounds, (c) character set ⊆ training chars, (d) n-gram integrity—every generated trigram appeared in training, (e) novelty and diversity ≥ 0.5 when the dataset is large enough.
+    - Assert: (a) ≥80% non-empty, (b) lengths within bounds, (c) character set ⊆ training chars, (d) n-gram integrity, every generated trigram appeared in training.
     -  Reproducibility: same seed produces an identical sequence; a different seed produces a different sequence.

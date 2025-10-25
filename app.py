@@ -181,6 +181,17 @@ def build_demo():
             "  (controlled by *stop probability*). Use **Min length** to prevent ultra-short names in variable mode.\n"
         )
 
+        gr.Markdown(
+            "**Controls reference:**\n"
+            "- **exact length (0 = variable)** – 0 allows variable length; >0 forces that exact length.\n"
+            "- **max length** – hard cap. Generation stops when this length is reached.\n"
+            "- **min length** – earliest length at which early-stop is allowed.\n"
+            "- **stop probability** – per-step chance to stop once `len ≥ min_len`.\n"
+            "- **retries per name** – attempts before giving up (helps avoid dead ends/duplicates).\n"
+            "- **how many to generate** – number of names to produce in one batch.\n"
+
+        )
+
         with gr.Row():
             with gr.Column():
                 dataset_choice = gr.Dropdown(

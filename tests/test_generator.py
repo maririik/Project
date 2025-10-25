@@ -42,7 +42,7 @@ def test_generate_once_stops_when_no_successors():
     names = ["zx"]
     model = NGramTrie(names, order=2)
     gen = NGramGenerator(model, rng=random.Random(0))
-    s = gen.generate_once(target_len=None, max_len=10, stop_prob=0.0)
+    s = gen.generate_once(target_len=None, max_len=10, min_len=1, stop_prob=0.0)
     assert isinstance(s, str)
     assert s == "" or len(s) <= 3
 
@@ -78,4 +78,28 @@ def test_generated_ngrams_exist_in_training_closed_corpus():
                 f"Found unseen {order}-gram '{s[i:i+order]}' in generated name '{s}'"
             )
 
+def test_early_stop_on_training_name_in_variable_mode():
+    t = NGramTrie(["an"], order=2)
+    g = NGramGenerator(t, rng=random.Random(0))  
+    s = g.generate_once(target_len=None, max_len=10, min_len=1, stop_prob=1.0)
+    assert s == "an"    
 
+def test_generate_once_order1_no_counts_breaks_early():
+    m = NGramTrie(["ab"], order=1)
+    g = NGramGenerator(m, rng=random.Random(0))
+    m.root.next_counts.clear()
+    s = g.generate_once(target_len=None, max_len=10, min_len=1, stop_prob=0.0)
+    assert s == ""  
+
+def test_generate_min_len_validations():
+    m = NGramTrie(["anna"], order=2)
+    g = NGramGenerator(m)
+
+    with pytest.raises(ValueError):
+        g.generate(target_len=None, max_len=5, min_len=0)
+
+    with pytest.raises(ValueError):
+        g.generate(target_len=None, max_len=4, min_len=5)
+
+    with pytest.raises(ValueError):
+        g.generate(target_len=4, max_len=10, min_len=5)

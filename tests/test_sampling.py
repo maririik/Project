@@ -21,3 +21,6 @@ def test_sample_weighted_cdf_boundaries_are_respected():
     assert sample_weighted(w, rng) == "a"
     assert sample_weighted(w, rng) == "b"
     assert sample_weighted(w, rng) == "c"
+
+def test_sample_weighted_default_rng_returns_key():
+    assert sample_weighted({"a": 1, "b": 1}) in {"a", "b"}

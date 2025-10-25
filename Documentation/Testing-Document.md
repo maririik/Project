@@ -1,80 +1,99 @@
-# Testing Document
+# Testing document
 
+## How to run the tests & coverage
+
+```bash
+# Install dev deps (pytest, pytest-cov)
+poetry install --with dev
+
+# Run tests with terminal coverage (and show missing lines)
+poetry run pytest --cov=namegen --cov-report=term-missing
+```
 ## Unit Testing Coverage Report
 
-| File                      | Stmts | Miss | Branch | BrPart | Cover | Missing                                     |
-|----------------------------|-------|------|--------|---------|--------|------------------------------------------|
-| src\namegen\__init__.py    | 3     | 0    | 0      | 0       | 100%   | —                                        |
-| src\namegen\generator.py   | 60    | 9    | 38     | 9       | 82%    | 22, 32, 92, 95, 99, 102, 108, 110, 123   |
-| src\namegen\trie.py        | 64    | 1    | 28     | 2       | 97%    | 98, 116→120                              |
-| **TOTAL**                  | 127   | 10   | 66     | 11      | **89%**|                                          |
+| File                       | Stmts | Miss | Cover  | Missing                         |
+|----------------------------|-------|------|--------|---------------------------------|
+| src\namegen\__init__.py    | 3     | 0    | 100%   | —                               |
+| src\namegen\generator.py   | 73    | 7    | 90%    | 32, 81, 111, 115, 118, 124, 144 |
+| src\namegen\trie.py        | 64    | 1    | 98%    | 98                              |
+| **TOTAL**                  | 140   | 8    | **94%**|                                 |
 
 **Notes on uncovered lines**  
-    The uncovered lines are primarily defensive/fallback branches (e.g., sampler CDF fallback, early exits on empty counts) that are not exercised by normal inputs.
+    The uncovered lines are primarily defensive/fallback branches (e.g., early exits on empty counts) that are not exercised by normal inputs.
 
-## What was tested and how?
-### 1. Weighted sampling (sample_weighted)
+## What was tested and how
+### Weighted sampling (sample_weighted) 
 
-**Empty mapping and all-zero weights**
-- Test name: test_sample_weighted_empty_and_zeroes
-- Intent: ensure the function returns None for no choices or when total weight is zero (no selectable item).
-- Concrete assertions:
+- Empty / all-zero maps return None
+  - How: { }, {"a":0,"b":0} with a seeded RNG returns None.
+
+- Single positive key dominates
+    - How: repeat 10 draws with {"x":3,"y":0} and Random(0); always returns "x".
+
+- CDF boundaries are respected
+    - How: with weights {"a":1,"b":3,"c":6} and a fake RNG sequence [0.05, 0.25, 0.75], the picks are "a", "b", "c" in order.
+
+- Default RNG works
+    - How: no RNG passed; result is in {"a","b"} for {"a":1,"b":1}.
+
+### Trie construction & queries
+- Validation guards
+    - order=0 → ValueError
+    - fit([]) → ValueError
+    - order longer than longest name → ValueError.
+- Case normalization
+    - default casefold() merges “Anna/anna”
+    - with normalize_case=False both branches exist.
+
+- Successors & start contexts
+    - small sets like ["anna","anne"] and ["maria","marie","mark"] verify successors() and start_counts.
+
+- Order=1 stores counts on root
+    - for ["abc","aba"], successors("") == {"a":3,"b":2,"c":1}.
+
+- Shape & counts match the classic example
+    - for ["to","tea","ted","ten","i","in","inn"], assert the exact prefix shape and the bigram/trigram statistics shown in class (e.g., start_counts for order 2: {"t":4,"i":3}, for order 3: {"to":1,"te":3,"in":2}).
+    - ASCII printer outputs the trie; test asserts expected lines are present.
 ``` 
-assert sample_weighted({}, rng) is None
-assert sample_weighted({"a": 0, "b": 0}, rng) is None
-```
+# printed trie from ["to","tea","ted","ten","i","in","inn"]
 
-**Single-positive-key dominates**
-- Test name: test_sample_weighted_single_positive_wins
-- Intent: if exactly one key has positive weight, it must always be chosen. Also tests repeated deterministic sampling with the same RNG.
-- Concrete assertions: run 10 samples with rng = random.Random(0) and assert the result is always "x" for {"x":3,"y":0}.
+(root)
++- i
+|  +- n
+|     +- n
++- t
+   +- e
+   |  +- a
+   |  +- d
+   |  +- n
+   +- o
+``` 
+![alt text](image.png)
 
-**CDF boundary behavior (exact cut points)**
-- Test name: test_sample_weighted_cdf_boundaries_are_respected
-- Intent: confirm the CDF selection logic maps fractional RNG outputs to the correct keys (checks off-by-one and ≤ vs < boundary decisions).
-- Concrete setup & assertions:
-```
-w = {"a": 1, "b": 3, "c": 6}   # total = 10
-FakeRNG([0.05, 0.25, 0.75])   # returns fractional values in sequence
-# The function multiplies random() * total -> [0.5, 2.5, 7.5]
-# cumulative thresholds: a:1, b:1+3=4, c:10
-# therefore results -> "a", "b", "c"
-```
+### Name generation (NGramGenerator) 
 
-### 2. NGramTrie.build() / prefix trie internals
-**Model validation**
-- Tests: test_rejects_invalid_order, test_fit_rejects_empty_training
-- Intent: Verify the NGramTrie validates constructor and training inputs (invalid n-gram order and empty training are rejected).
-- How: Attempt to construct/fit with invalid inputs (NGramTrie(..., order=0) and NGramTrie().fit([])) and assert a ValueError is raised.
+- Exact length honored (when feasible)
+    - with mixed names and target_len=4, output (if not None) has length 4.
 
-**Argument validation**
-- Tests: test_generate_raises_when_target_len_exceeds_max_len
-- Intent: Ensure NGramGenerator.generate() validates its parameters (specifically target_len must not exceed max_len).
-- How: Call gen.generate(target_len=12, max_len=10) and assert it raises ValueError.
+- Order=1 path
+    - generation uses root counts
+    - generating length-2 names returns exactly 2 chars.
 
-**Length & stopping behavior**
-- Tests: test_generate_respects_target_len_exact_when_possible, test_generate_with_order_one_uses_root_counts_and_stops, test_variable_length_behavior, test_generate_once_stops_when_no_successors
-- Intent: Verify how the generator handles length and termination: respecting target_len when possible, the special-case order==1 path, probabilistic early stops, and graceful termination when no successors exist.
-- How: Run the listed subtests using small deterministic RNG (FakeRNG) and assert produced lengths or None behavior as appropriate (e.g., len(out)==target_len when non-None; bounds on variable-length output; short/empty output when successors absent).
+- Argument validation
+    -  target_len>max_len raises ValueError
+    - Additional guards: invalid min_len (0, >max_len, >target_len) all raise.
 
-**Generation constraints & corpus integrity**
-- Tests: test_generate_avoids_exact_training_names, test_generated_ngrams_exist_in_training_closed_corpus
-- Intent: Confirm generator output respects corpus constraints: it should not return exact training names and should only emit n-grams observed in training.
-- How: (1) Train on ["maria"], monkeypatch sample_weighted to force reconstruction and assert generate(..., retries=0) returns None. (2) Train on a closed repetitive corpus (e.g., ["abab..."]), collect observed n-grams, generate many samples and assert every generated n-gram is in the observed set.
+- Graceful stop when no successors
+    - using tiny corpus like ["zx"] and generate_once(..., stop_prob=0.0) yields "" or very short.
 
-### 3. Generation
-**Length & stopping behavior**
-- Tests: test_generate_respects_target_len_exact_when_possible, test_generate_with_order_one_uses_root_counts_and_stops, test_generate_once_stops_when_no_successors, test_variable_length_behavior
-- Intent: Verify generation length and termination logic: that target_len is respected when possible, order==1 uses root counts and stops correctly, generate_once terminates when no successors exist, and probabilistic/variable-length stopping behaves within expected bounds.
-- How: For each listed test, construct an NGramTrie with the specified corpus and NGramGenerator with a deterministic RNG (or FakeRNG for sequence control). Call generate/generate_once with the indicated target_len, max_len, stop_prob, and capitalize settings and assert either the produced string length, a short/empty string when successors are absent, or that output is None or within the expected upper bound depending on the forced RNG sequence.
+- Variable-length stopping behavior
+    - fake RNG sequences bound the produced length for order-3 models.
 
-**Argument validation**
-- Tests: test_generate_raises_when_target_len_exceeds_max_len
-- Intent: Ensure NGramGenerator.generate() validates its arguments (specifically that target_len must not exceed max_len).
-- How: Build a small model and call gen.generate(target_len=12, max_len=10) inside a pytest.raises(ValueError) context and assert that a ValueError is raised.
+- Reject exact training names
+    - with names ["maria"], force reconstruction and set retries=0, result is None.
 
-**Generation constraints & corpus integrity**
-- Tests: test_generate_avoids_exact_training_names, test_generated_ngrams_exist_in_training_closed_corpus
-- Intent: Confirm the generator respects corpus constraints: it should not return exact training names and it should only emit n-grams observed in training.
-- How: avoid exact training names: Train on ["maria"], monkeypatch namegen.sample_weighted to force reconstruction, call generate(..., retries=0) and assert the result is None.
-    - n-grams exist in training (closed corpus): Train on a closed repetitive corpus like ["abababab..."], collect all observed n-grams from model.names, generate many samples, and assert every n-gram in generated names is in the observed set (fail with a clear assertion message if unseen n-gram found).
+- Early stop on training name (variable mode)
+    - ["an"] and stop_prob=1.0  returns "an" immediately.
+
+- Closed-corpus n-gram integrity
+    - for ["abababababababa"] (order 2), every generated bigram is in the observed set.

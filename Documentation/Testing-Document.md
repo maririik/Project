@@ -3,11 +3,20 @@
 ## How to run the tests & coverage
 
 ```bash
-# Install dev deps (pytest, pytest-cov)
+# 1) Install dev deps (pytest, pytest-cov, etc.)
 poetry install --with dev
 
-# Run tests with terminal coverage (and show missing lines)
-poetry run pytest --cov=namegen --cov-report=term-missing
+# 2) Run the fast suite (excludes slow end-to-end test)
+poetry run pytest -q -m "not slow"
+
+# 3) Run everything (including the slow end-to-end test)
+poetry run pytest -q
+
+# 4) Coverage in terminal (and show missing lines)
+poetry run pytest --cov=namegen --cov-report=term-missing -m "not slow"
+
+# 5) Run just the end-to-end test
+poetry run pytest -q tests/test_e2e.py -m slow
 ```
 ## Unit Testing Coverage Report
 
@@ -97,3 +106,13 @@ poetry run pytest --cov=namegen --cov-report=term-missing
 
 - Closed-corpus n-gram integrity
     - for ["abababababababa"] (order 2), every generated bigram is in the observed set.
+
+### End-to-end batch quality & reproducibility 
+- Tests: test_end_to_end_batch_quality_and_reproducibility
+- Intent: Exercise the full pipeline (load real dataset → build NGramTrie → generate a batch) and verify core quality properties and reproducibility under a fixed RNG seed.
+
+- How:
+    - Load a real dataset from data/ (falls back to a small built-in list if missing).
+    - Build an order-3 model, then generate a batch of ~200 names (min_len=3, max_len=12, stop_prob≈0.35, retries=500, capitalize=False).
+    - Assert: (a) ≥80% non-empty, (b) lengths within bounds, (c) character set ⊆ training chars, (d) n-gram integrity—every generated trigram appeared in training, (e) novelty and diversity ≥ 0.5 when the dataset is large enough.
+    -  Reproducibility: same seed produces an identical sequence; a different seed produces a different sequence.

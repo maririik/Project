@@ -103,3 +103,4 @@ def test_generate_min_len_validations():
 
     with pytest.raises(ValueError):
         g.generate(target_len=4, max_len=10, min_len=5)
+

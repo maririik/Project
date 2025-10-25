@@ -26,3 +26,6 @@ build-backend = "poetry.core.masonry.api"
 minversion = "6.0"
 addopts = "-q --maxfail=1 --disable-warnings"
 testpaths = ["tests"]
+markers = [
+  "slow: end-to-end batch quality & reproducibility test",
+]

@@ -1,8 +1,5 @@
-
 __pycache__/
 *.py[cod]
-
-
 .pytest_cache/
 
 .venv/
@@ -12,6 +9,10 @@ venv/
 .vscode/
 .idea/
 
-.coverage/
+.coverage
 
+tempCodeRunnerFile.py
+tempCodeRunnerFile.python
 src/temp*
+
+htmlcov/

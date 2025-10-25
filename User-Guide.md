@@ -38,7 +38,7 @@ Make sure your training datasets are in the data/ folder (one name per line).
     - Note: n-gram order n ≈ Markov order n−1 (same idea, different numbering).
 
 - exact length (0 = variable):
-    - > 0 → force exact length.
+    - if > 0 → force exact length.
     - 0 → variable length with early stopping (see stop probability).
 
 - max length: hard cap on any generated name.
@@ -78,6 +78,17 @@ The generator expects plain text files in `data/` with **one name per line**.
 - **Normalization:** keep everything lowercase and remove leading/trailing spaces.
 - **Hyphenated names:** `maria-elisabet` is fine, the hyphen is modeled as a character.
 - **Very short datasets:** with only a few names, the model may produce many training names. Increase `retries` or add more data.
+- You can also add your own date set:
+    1. Put my_names.txt in data/ (one name per line).
+    2. Add an entry to DATASETS in app.py:
+    ```bash
+    "My names (my_names.txt)": {
+    "files": [DATA_DIR / "my_names.txt"],
+    "desc": "Short description / source"
+    }
+    ```
+    3. Restart the app and choose it from the Dataset dropdown.
+
 
 ### Common pitfalls
 

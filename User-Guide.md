@@ -102,12 +102,21 @@ The generator expects plain text files in `data/` with **one name per line**.
 
 All tests live in the `tests/` folder and cover trie construction and validation, weighted sampling, and generation behavior (including edge cases and reproducibility helpers). No manual seeding is needed to run the suite.
 
-### How to run the tests & coverage
+## How to run the tests & coverage
 
 ```bash
-# Install dev deps (pytest, pytest-cov)
+# 1) Install dev deps (pytest, pytest-cov, etc.)
 poetry install --with dev
 
-# Run tests with terminal coverage (and show missing lines)
-poetry run pytest --cov=namegen --cov-report=term-missing
+# 2) Run the fast suite (excludes slow end-to-end test)
+poetry run pytest -q -m "not slow"
+
+# 3) Run everything (including the slow end-to-end test)
+poetry run pytest -q
+
+# 4) Coverage in terminal (and show missing lines)
+poetry run pytest --cov=namegen --cov-report=term-missing -m "not slow"
+
+# 5) Run just the end-to-end test
+poetry run pytest -q tests/test_e2e.py -m slow
 ```
